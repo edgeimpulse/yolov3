@@ -408,7 +408,30 @@ class AgnosticNMS(keras.layers.Layer):
         valid_detections = tf.shape(selected_inds)[0]
         return padded_boxes, padded_scores, padded_classes, valid_detections
 
+# https://github.com/ultralytics/yolov5/issues/7091#issuecomment-1076778447
+class TFMaxPool2d(keras.layers.Layer):
+    def __init__(self, k=(2, 2), s=None, p='same', w=None):
+        super().__init__()
+        if p == 0:
+            padding = 'valid'
+        else:
+            padding = 'same'
+        self.m = keras.layers.MaxPool2D(pool_size=k, strides=s, padding=padding)
+        
+    def call(self, inputs):
+        return self.m(inputs)
 
+class TFZeroPad2d(keras.layers.Layer):
+    def __init__(self, p=(1, 1), w=None):
+        super().__init__()
+        if hasattr(p, '__len__'):
+            if len(p) == 4:
+                p = ((p[2], p[3]), (p[0], p[1]))
+        self.z = keras.layers.ZeroPadding2D(padding=p)
+
+    def call(self, inputs):
+        return self.z(inputs)
+    
 def representative_dataset_gen(dataset, ncalib=100):
     # Representative dataset generator for use with converter.representative_dataset, returns a generator of np arrays
     for n, (path, img, im0s, vid_cap, string) in enumerate(dataset):
